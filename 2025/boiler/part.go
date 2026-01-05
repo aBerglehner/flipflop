@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/alex/adventofcode/go/utils"
+	"github.com/alex/flipflop/utils"
 )
 
 func main() {
