@@ -1,3 +1,3 @@
 #!/bin/bash
 
-go run 02/part.go
+go run 06/part.go
