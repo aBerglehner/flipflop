@@ -8,12 +8,14 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/alex/flipflop/utils"
 )
 
 func main() {
 	part3()
+	part3Para()
 }
 
 type pos struct {
@@ -149,7 +151,7 @@ func part3() {
 
 	distances := [][]int64{}
 	for _, line := range data {
-		fmt.Println(line)
+		// fmt.Println(line)
 		strs := strings.Split(line, " ")
 		n, _ := strconv.Atoi(strs[0])
 		l, _ := strconv.Atoi(strs[1])
@@ -159,18 +161,18 @@ func part3() {
 		}
 		distances = append(distances, dim)
 	}
-	fmt.Printf("distances: %+v\n", distances)
-	fmt.Println()
+	// fmt.Printf("distances: %+v\n", distances)
+	// fmt.Println()
 
 	ans := 0
 	for _, v := range distances {
-		fmt.Printf("v: %v\n", v)
 		cur := multinomialBig(v)
-		fmt.Printf("cur: %v\n", cur)
 		ans += cur
-		fmt.Println()
+		// fmt.Printf("v: %v\n", v)
+		// fmt.Printf("cur: %v\n", cur)
+		// fmt.Println()
 	}
-	fmt.Printf("ans: %v\n", ans)
+	// fmt.Printf("ans: %v\n", ans)
 }
 
 func multinomialBig(lengths []int64) int {
@@ -191,4 +193,50 @@ func multinomialBig(lengths []int64) int {
 		used += m
 	}
 	return int(result.Int64())
+}
+
+func part3Para() {
+	_, filename, _, _ := runtime.Caller(0)
+	baseDir := filepath.Dir(filename)
+
+	inputPath := filepath.Join(baseDir, "input")
+	data, err := utils.ReadLines(inputPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	distances := [][]int64{}
+	for _, line := range data {
+		// fmt.Println(line)
+		strs := strings.Split(line, " ")
+		n, _ := strconv.Atoi(strs[0])
+		l, _ := strconv.Atoi(strs[1])
+		dim := []int64{}
+		for range n {
+			dim = append(dim, int64(l))
+		}
+		distances = append(distances, dim)
+	}
+	// fmt.Printf("distances: %+v\n", distances)
+	// fmt.Println()
+
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	ans := 0
+	for _, v := range distances {
+		wg.Add(1)
+		go func() {
+			mu.Lock()
+			defer mu.Unlock()
+			defer wg.Done()
+			cur := multinomialBig(v)
+			ans += cur
+		}()
+		// fmt.Printf("v: %v\n", v)
+		// fmt.Printf("cur: %v\n", cur)
+		// fmt.Println()
+	}
+	wg.Wait()
+	// fmt.Printf("ans: %v\n", ans)
 }
