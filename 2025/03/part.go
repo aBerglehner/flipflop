@@ -7,12 +7,15 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/alex/flipflop/utils"
 )
 
 func main() {
-	part3()
+	part2()
+	part2ParaCh()
+	part2ParaMutex()
 }
 
 // 10 to 99
@@ -55,7 +58,7 @@ func part2() {
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
 
-	inputPath := filepath.Join(baseDir, "input")
+	inputPath := filepath.Join(baseDir, "inputBig")
 	data, err := utils.ReadLines(inputPath)
 	if err != nil {
 		log.Fatal(err)
@@ -76,7 +79,97 @@ func part2() {
 			ans++
 		}
 	}
-	fmt.Printf("ans: %v\n", ans)
+	// fmt.Printf("ans: %v\n", ans)
+}
+
+func part2ParaCh() {
+	_, filename, _, _ := runtime.Caller(0)
+	baseDir := filepath.Dir(filename)
+
+	inputPath := filepath.Join(baseDir, "inputBig")
+	data, err := utils.ReadLines(inputPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dataTasks := utils.SplitTasks(data, runtime.NumCPU())
+	ch := make(chan int, len(dataTasks))
+	var wg sync.WaitGroup
+	for _, v := range dataTasks {
+		wg.Add(1)
+		go paraCompCh(v, ch, &wg)
+	}
+	wg.Wait()
+	close(ch)
+
+	ans := 0
+	for v := range ch {
+		ans += v
+	}
+	// fmt.Printf("ans: %v\n", ans)
+}
+
+func paraCompCh(data []string, ch chan<- int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	ans := 0
+	for i := range data {
+		// fmt.Println(line)
+		strs := strings.Split(data[i], ",")
+		red, _ := strconv.Atoi(strs[0])
+		green, _ := strconv.Atoi(strs[1])
+		blue, _ := strconv.Atoi(strs[2])
+		if red == green || red == blue || green == blue {
+			continue
+		}
+
+		if green > red && green > blue {
+			ans++
+		}
+	}
+	ch <- ans
+}
+
+func part2ParaMutex() {
+	_, filename, _, _ := runtime.Caller(0)
+	baseDir := filepath.Dir(filename)
+
+	inputPath := filepath.Join(baseDir, "inputBig")
+	data, err := utils.ReadLines(inputPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dataTasks := utils.SplitTasks(data, runtime.NumCPU())
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	ans := 0
+	for _, v := range dataTasks {
+		wg.Add(1)
+		go paraCompMutex(v, &ans, &wg, &mu)
+	}
+	wg.Wait()
+
+	// fmt.Printf("ans: %v\n", ans)
+}
+
+func paraCompMutex(data []string, globalAns *int, wg *sync.WaitGroup, mu *sync.Mutex) {
+	defer wg.Done()
+	ans := 0
+	for _, line := range data {
+		// fmt.Println(line)
+		strs := strings.Split(line, ",")
+		red, _ := strconv.Atoi(strs[0])
+		green, _ := strconv.Atoi(strs[1])
+		blue, _ := strconv.Atoi(strs[2])
+		if red == green || red == blue || green == blue {
+			continue
+		}
+
+		if green > red && green > blue {
+			ans++
+		}
+	}
+	mu.Lock()
+	*globalAns += ans
+	mu.Unlock()
 }
 
 // red , green , blue
